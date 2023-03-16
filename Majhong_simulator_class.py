@@ -139,6 +139,7 @@ class Mahjong:
 
         # Check Chow
 
+
         return status
 
     def check_Kong(self, tile, discard=False):
@@ -150,8 +151,7 @@ class Mahjong:
         for i in range(3):
             Kong_tile_3.append(tile)
         Kong_tile_4 = []
-        for i in range(4):
-            Kong_tile_4.append(tile)
+        
 
         # check whether there's a set in play's open hand
         if Kong_tile_3 in self.open_hands[self.current_player]:
@@ -161,7 +161,19 @@ class Mahjong:
         
         # A player draws a tile.
         if not discard:
-            # concealed Kong
+            # concealed Kong case 1:
+            for i in range(len(hand)): # i is the tile in hand
+                if hand.count(i) == 4:
+                    decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
+                    if decision == 1:
+                        for j in range(4):
+                            hand.remove(i)
+                        for j in range(4):
+                            Kong_tile_4.append(i)
+                        self.open_hands[self.current_player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
+                        return True
+            '''
+            # concealed Kong case 2:
             if count_hand == 4:
                 decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
                 if decision == 1:
@@ -169,6 +181,7 @@ class Mahjong:
                         hand.remove(tile)   # remove tiles from player's hand
                     self.open_hands[self.current_player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
                     return True
+            '''
             # add Kong
             if is_in_open_hand:
                 decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
@@ -220,6 +233,9 @@ class Mahjong:
                     return True
         return False
 
+    def check_Chow(self):
+        pass
+
     def sort_all_hands(self):
         for player in self.players:
             self.hands[player].sort()
@@ -240,9 +256,50 @@ class Mahjong:
                 hand.remove(hand[tile_index])
                 return discard_tile
 
-    def ckeck_win(self, hand):
-        
-        pass
+    def check_win(self, tile):
+            hand = self.hands[self.current_player]
+            hand.append(tile)
+            hand = hand.sort()
+            eyes = []
+            for i in range(len(hand) - 1):
+                if hand[i] == hand[i+1] and eyes.count(hand[i]) == 0:
+                    eyes.append(hand[i])
+            
+            if len(eyes) == 0:
+                return False
+
+            for eye in eyes:
+                hand = self.hands[self.current_player]
+                hand.remove(eye)
+                hand.remove(eye)
+                for i in hand:
+                    if hand.count(i) >= 3:
+                        hand.remove(i)
+                        hand.remove(i)
+                        hand.remove(i)
+                        continue
+                    
+                    if self.w_tiles.count(i):
+                        chow_index = self.w_tiles.index(i)
+                        chow_mid = self.w_tiles[chow_index + 1]
+                        chow_last = self.w_tiles[chow_index + 2]
+                    elif self.t_tiles.count(i):
+                        chow_index = self.t_tiles.index(i)
+                        chow_mid = self.t_tiles[chow_index + 1]
+                        chow_last = self.t_tiles[chow_index + 2]
+                    elif self.b_tiles.count(i):
+                        chow_index = self.b_tiles.index(i)
+                        chow_mid = self.b_tiles[chow_index + 1]
+                        chow_last = self.b_tiles[chow_index + 2]
+
+                    if hand.count(chow_mid) != 0 and hand.count(chow_last) != 0:
+                        hand.remove(i)
+                        hand.remove(chow_mid)
+                        hand.remove(chow_last)
+                        continue
+                    break
+                if len(hand) == 0:
+                    return True
 
     def play(self):
         first_turn = True
