@@ -4,31 +4,53 @@ class Mahjong:
     def __init__(self, num_players):
         self.tiles = [  '萬1', '萬2', '萬3', '萬4', '萬5', '萬6', '萬7', '萬8', '萬9',
                         '條1', '條2', '條3', '條4', '條5', '條6', '條7', '條8', '條9',
-                        '索1', '索2', '索3', '索4', '索5', '索6', '索7', '索8', '索9',
+                        '餅1', '餅2', '餅3', '餅4', '餅5', '餅6', '餅7', '餅8', '餅9',
                         'E', 'S', 'W', 'N', 'C', 'F', 'P']      # E:東, S:南, W:西, N:北, C:中, F: 發, P:白
+        self.w_tiles = ['萬1', '萬2', '萬3', '萬4', '萬5', '萬6', '萬7', '萬8', '萬9']
+        self.t_tiles = ['條1', '條2', '條3', '條4', '條5', '條6', '條7', '條8', '條9']
+        self.b_tiles = ['餅1', '餅2', '餅3', '餅4', '餅5', '餅6', '餅7', '餅8', '餅9']
         self.tiles *= 4
-        self.players = ['East', 'South', 'West', 'North']
+        self.players = ['1(East)', '2(South)', '3(West)', '4(North)']
+        self.card_river = []    
         self.hands = {player :[self.tiles.pop(random.randint(0, len(self.tiles) - 1)) for i in range(16)] for player in self.players}
         self.open_hands = {player :[] for player in self.players}
-        self.current_player = 'East'
+        self.sets = {player :[] for player in self.players}
+        self.pairs = {player :[] for player in self.players}
+        self.current_player = '1(East)'
         self.fisrt_round = True
 
-    def display_hand(self, hand):
+    def display_all_hands(self):
+        for player in self.players:
+            print('\nPlayer {0} 的手牌: '.format(player))
+            index = 1
+            for tile in self.hands[player]:
+                print('({0}){1:^2}'.format(index, tile), end=' ')
+                index += 1
+            print('\n')
+
+    def display_hand(self):
+        print('\nPlayer', self.current_player + '\'s turn.')
         print('\n你的手牌: ')
         index = 1
-        for tile in hand:
+        for tile in self.hands[self.current_player]:
             print('({0}){1:^2}'.format(index, tile), end=' ')
             index += 1
-        print('\n\n')
+        print('\n')
 
     def display_open_hand(self):
+        
         for player in self.players:
             print('玩家{0:5}: {1}\n'.format(player, self.open_hands[player]))
+
+    def player_change(self):
+        for i in range(len(self.players)):  # len(self.players) == 4
+                if self.players[i] == self.current_player:
+                    self.current_player = self.players[(i+1)%len(self.players)]
+                    break
 
     def choose_action(self, hand):
         while True:
             action = int(input('玩家{0}請選擇動作 (1)丟牌, (2)吃, (3)碰, (4)槓, (5)聽, (6)胡, (7)查看open hand, (8)end: '.format(self.current_player)))
-            print('\n')
             if action == 1:
                 discard = self.discard_tile(hand)
                 return discard
@@ -81,61 +103,175 @@ class Mahjong:
             if self.is_winning_tile(hand, tile):
                 return True
         return False
+    
+    def current_player_turn(self):
+        # The turn starts
+        # Draw a tile
+        draw_tile = self.draw_tile()
 
-    def discard_tile(self, hand):
+        # Sort player's hand
+        self.sort_all_hands()
+
+        # Display player's hand
+        self.display_hand()
+
+        # Check win
+        
+
+        # Check Kong
+        self.check_Kong(draw_tile)
+
+        # Discard a tile
+        discard_tile = self.discard_tile()
+
+        return discard_tile
+
+    def check_other_player_move(self, discard_tile):
+        status = False # Determine whether continue other players' move
+
+        # Check win
+
+        # Check Kong
+        status = self.check_Kong(discard_tile, True)
+
+        # Check Pong
+        status = self.check_Pong(discard_tile)
+
+        # Check Chow
+
+        return status
+
+    def check_Kong(self, tile, discard=False):
+        
+        hand = self.hands[self.current_player]
+        count_hand = hand.count(tile)   # count for the same tile
+
+        Kong_tile_3 = []
+        for i in range(3):
+            Kong_tile_3.append(tile)
+        Kong_tile_4 = []
+        for i in range(4):
+            Kong_tile_4.append(tile)
+
+        # check whether there's a set in play's open hand
+        if Kong_tile_3 in self.open_hands[self.current_player]:
+            is_in_open_hand = True
+        else:
+            is_in_open_hand = False
+        
+        # A player draws a tile.
+        if not discard:
+            # concealed Kong
+            if count_hand == 4:
+                decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
+                if decision == 1:
+                    for i in range(4):
+                        hand.remove(tile)   # remove tiles from player's hand
+                    self.open_hands[self.current_player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
+                    return True
+            # add Kong
+            if is_in_open_hand:
+                decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
+                if decision == 1:
+                    hand.remove(tile)   # remove the tile from player's hand 
+                    # adjust the set in open hand from 3 tiles to 4 tiles
+                    tile_index = self.open_hands[self.current_player].index(Kong_tile_3)
+                    self.open_hands[self.current_player][tile_index] += tile
+                    return True
+
+        # A player discards a tile.
+        if discard:
+            for player in self.players:
+                # exposed Kong
+                if count_hand == 3:
+                    decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(player)))
+                    if decision == 1:
+                        for i in range(3):
+                            hand.remove(tile)   # remove tiles from player's hand
+                        self.open_hands[player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
+                        # change player
+                        self.current_player = player
+                        self.player_change()
+                        return True
+        return False
+
+    def check_Pong(self, tile):
+        Pong_tile = []
+        for i in range(3):
+            Pong_tile.append(tile)
+        
+        for player in self.players:
+            hand = self.hands[player]
+            count_hand = hand.count(tile)   # count for the same tile
+            
+            # Pong
+            if count_hand == 2:
+                decision = int(input("玩家{0}是否要碰牌: (1)是 (2)否: ".format(player)))
+                if decision == 1:
+                    for i in range(2):
+                        hand.remove(tile)   # remove tiles from player's hand
+                    self.open_hands[player].append(Pong_tile)  # append Pong tiles to the player's open hand
+                    # Change player
+                    self.current_player = player
+                    # Display your hand
+                    self.display_hand()
+                    # Discard a tile
+                    self.discard_tile()
+                    return True
+        return False
+
+    def sort_all_hands(self):
+        for player in self.players:
+            self.hands[player].sort()
+
+    def draw_tile(self):
+        tile = self.hands[self.current_player].append(self.tiles.pop(0))
+        return tile
+
+    def discard_tile(self):
+        hand = self.hands[self.current_player]
         while True:
             tile_index = int(input('\nEnter tile to discard: ')) - 1
             if tile_index >= len(hand):
                 print('Tile not found in hand. Please try again.')
             else:
-                print('{0}丟{1}'.format(self.current_player, hand[tile_index]))
+                print('\nPlayer {0} 丟 {1}\n'.format(self.current_player, hand[tile_index]))
+                discard_tile = hand[tile_index]
                 hand.remove(hand[tile_index])
-                return hand
-            
-    def Kong(self, hand):
-        pass
+                return discard_tile
 
-    def Pong(self, hand):
-        pass
-
-    def Chow(self, hand):
-        pass
-
-    def Ting(self, hand):
-        pass
-
-    def win(self, hand):
+    def ckeck_win(self, hand):
+        
         pass
 
     def play(self):
+        first_turn = True
         while True:
-            if self.fisrt_round == True and self.current_player == 'East':            # 開門
-                self.hands[self.current_player].append(self.tiles.pop(0))
-                self.fisrt_round = False
+            # Sort all players' hands
+            self.sort_all_hands()
+            if first_turn:
+                self.display_all_hands()
+                first_turn = False
+            # continue to next turn
+            next_turn = False
+            do = False
 
-            print('\nPlayer', self.current_player + '\'s turn.')
-            self.hands[self.current_player].sort()
-            self.display_hand(self.hands[self.current_player])
+            # current player's turn
+            discard_tile = self.current_player_turn()
 
-            # Check for a winning hand
-            if self.is_winning_hand(self.hands[self.current_player]):
-                print('Congratulations, you win!')
-                break
+            # other player's turn
+            while(next_turn or not do):
+                next_turn = self.check_other_player_move(discard_tile)
+                do = True
             
-            # Choose action
-            action = self.choose_action(self.hands[self.current_player])
-            '''
-            # Ask player to discard a tile
-            discard = self.discard_tile(self.hands[self.current_player])
-            print('Player', self.current_player, 'discards', discard)
-            '''
+            # end or not
+            end = int(input("end or not (1)yes (2)no: "))
+            if end == 1:
+                exit()
 
-            # Update hands and next player
-            for i in range(len(self.players)):
-                if self.players[i] == self.current_player:
-                    self.current_player = self.players[(i+1)%len(self.players)]
-                    self.hands[self.current_player].append(self.tiles.pop(0))
-                    break
+            #  Player change
+            self.player_change()
+            
             
 
 # Set up game
