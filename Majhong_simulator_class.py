@@ -18,6 +18,7 @@ class Mahjong:
         self.pairs = {player :[] for player in self.players}
         self.current_player = '1(East)'
         self.fisrt_round = True
+        self.Kong_this_round = False
 
     def display_all_hands(self):
         for player in self.players:
@@ -47,35 +48,6 @@ class Mahjong:
                 if self.players[i] == self.current_player:
                     self.current_player = self.players[(i+1)%len(self.players)]
                     break
-
-    def choose_action(self, hand):
-        while True:
-            action = int(input('玩家{0}請選擇動作 (1)丟牌, (2)吃, (3)碰, (4)槓, (5)聽, (6)胡, (7)查看open hand, (8)end: '.format(self.current_player)))
-            if action == 1:
-                discard = self.discard_tile(hand)
-                return discard
-            elif action == 2:
-                set = self.Chow(hand)
-                return set
-            elif action == 3:
-                set = self.Pong(hand)
-                return set
-            elif action == 4:
-                set = self.Kong(hand)
-                return set
-            elif action == 5:
-                status = self.Ting(hand)
-                return status
-            elif action == 6:
-                status = self.win(hand)
-                return status
-            elif action == 7:
-                self.display_open_hand()
-                continue
-            elif action == 8:
-                exit()
-            else:
-                print('Invalid action, please try again.')
 
     def is_winning_tile(self, hand, tile):
         hand_copy = hand[:]
@@ -116,7 +88,7 @@ class Mahjong:
         self.display_hand()
 
         # Check win
-        
+        self.check_win()
 
         # Check Kong
         self.check_Kong(draw_tile)
@@ -130,12 +102,14 @@ class Mahjong:
         status = False # Determine whether continue other players' move
 
         # Check win
+        self.check_win()
 
         # Check Kong
         status = self.check_Kong(discard_tile, True)
 
         # Check Pong
-        status = self.check_Pong(discard_tile)
+        if not status:
+            status = self.check_Pong(discard_tile)
 
         # Check Chow
 
@@ -143,17 +117,18 @@ class Mahjong:
         return status
 
     def check_Kong(self, tile, discard=False):
-        
         hand = self.hands[self.current_player]
-        count_hand = hand.count(tile)   # count for the same tile
+        count_hand = hand.count(tile)   # Count for the same tile
 
         Kong_tile_3 = []
         for i in range(3):
             Kong_tile_3.append(tile)
         Kong_tile_4 = []
+        for i in range(4):
+            Kong_tile_4.append(tile)
         
 
-        # check whether there's a set in play's open hand
+        # Check whether there's a set in play's open hand
         if Kong_tile_3 in self.open_hands[self.current_player]:
             is_in_open_hand = True
         else:
@@ -168,9 +143,11 @@ class Mahjong:
                     if decision == 1:
                         for j in range(4):
                             hand.remove(i)
+                        Kong_tile_4 = []
                         for j in range(4):
                             Kong_tile_4.append(i)
                         self.open_hands[self.current_player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
+                        self.Kong_this_round = True
                         return True
             '''
             # concealed Kong case 2:
@@ -190,22 +167,26 @@ class Mahjong:
                     # adjust the set in open hand from 3 tiles to 4 tiles
                     tile_index = self.open_hands[self.current_player].index(Kong_tile_3)
                     self.open_hands[self.current_player][tile_index] += tile
+                    self.Kong_this_round = True
                     return True
 
         # A player discards a tile.
         if discard:
             for player in self.players:
-                # exposed Kong
-                if count_hand == 3:
-                    decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(player)))
-                    if decision == 1:
-                        for i in range(3):
-                            hand.remove(tile)   # remove tiles from player's hand
-                        self.open_hands[player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
-                        # change player
-                        self.current_player = player
-                        self.player_change()
-                        return True
+                if player != self.current_player:
+                    hand = self.hands[player]
+                    count_hand = hand.count(tile)   # Count for the same tile
+                    # exposed Kong
+                    if count_hand == 3:
+                        decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(player)))
+                        if decision == 1:
+                            for i in range(3):
+                                hand.remove(tile)   # remove tiles from player's hand
+                            self.open_hands[player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
+                            self.Kong_this_round = True
+                            # Change player
+                            self.current_player = player
+                            return True
         return False
 
     def check_Pong(self, tile):
@@ -214,23 +195,24 @@ class Mahjong:
             Pong_tile.append(tile)
         
         for player in self.players:
-            hand = self.hands[player]
-            count_hand = hand.count(tile)   # count for the same tile
-            
-            # Pong
-            if count_hand == 2:
-                decision = int(input("玩家{0}是否要碰牌: (1)是 (2)否: ".format(player)))
-                if decision == 1:
-                    for i in range(2):
-                        hand.remove(tile)   # remove tiles from player's hand
-                    self.open_hands[player].append(Pong_tile)  # append Pong tiles to the player's open hand
-                    # Change player
-                    self.current_player = player
-                    # Display your hand
-                    self.display_hand()
-                    # Discard a tile
-                    self.discard_tile()
-                    return True
+            if player != self.current_player:
+                hand = self.hands[player]
+                count_hand = hand.count(tile)   # count for the same tile
+                
+                # Pong
+                if count_hand == 2:
+                    decision = int(input("玩家{0}是否要碰牌: (1)是 (2)否: ".format(player)))
+                    if decision == 1:
+                        for i in range(2):
+                            hand.remove(tile)   # remove tiles from player's hand
+                        self.open_hands[player].append(Pong_tile)  # append Pong tiles to the player's open hand
+                        # Change player
+                        self.current_player = player
+                        # Display your hand
+                        self.display_hand()
+                        # Discard a tile
+                        self.discard_tile()
+                        return True
         return False
 
     def check_Chow(self):
@@ -309,24 +291,29 @@ class Mahjong:
             if first_turn:
                 self.display_all_hands()
                 first_turn = False
-            # continue to next turn
+            # Continue to next turn
             next_turn = False
             do = False
 
-            # current player's turn
+            # Current player's turn
             discard_tile = self.current_player_turn()
 
-            # other player's turn
-            while(next_turn or not do):
+            # Other player's turn
+            while((next_turn or not do) and not self.Kong_this_round):
                 next_turn = self.check_other_player_move(discard_tile)
                 do = True
             
-            # end or not
+            # Someone Kong this round
+            if self.Kong_this_round == True:
+                self.Kong_this_round = False
+                continue
+
+            # End or not
             end = int(input("end or not (1)yes (2)no: "))
             if end == 1:
                 exit()
 
-            #  Player change
+            # Player change
             self.player_change()
             
             
