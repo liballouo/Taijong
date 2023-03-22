@@ -2,9 +2,15 @@ import random
 
 class Mahjong:
     def __init__(self, num_players):
-        self.tiles = [  '萬1', '萬2', '萬3', '萬4', '萬5', '萬6', '萬7', '萬8', '萬9',
-                        '條1', '條2', '條3', '條4', '條5', '條6', '條7', '條8', '條9',
-                        '餅1', '餅2', '餅3', '餅4', '餅5', '餅6', '餅7', '餅8', '餅9',
+        # 有哪些牌
+        self.all_tiles = [  '萬1', '萬2', '萬3', '萬4', '萬5', '萬6', '萬7', '萬8', '萬9',  # 0 ~ 8
+                        '條1', '條2', '條3', '條4', '條5', '條6', '條7', '條8', '條9',  # 9 ~ 17
+                        '餅1', '餅2', '餅3', '餅4', '餅5', '餅6', '餅7', '餅8', '餅9',  # 18~ 26
+                        'E', 'S', 'W', 'N', 'C', 'F', 'P']      # E:東, S:南, W:西, N:北, C:中, F: 發, P:白
+        # 牌庫
+        self.tiles = [  '萬1', '萬2', '萬3', '萬4', '萬5', '萬6', '萬7', '萬8', '萬9',  # 0 ~ 8
+                        '條1', '條2', '條3', '條4', '條5', '條6', '條7', '條8', '條9',  # 9 ~ 17
+                        '餅1', '餅2', '餅3', '餅4', '餅5', '餅6', '餅7', '餅8', '餅9',  # 18~ 26
                         'E', 'S', 'W', 'N', 'C', 'F', 'P']      # E:東, S:南, W:西, N:北, C:中, F: 發, P:白
         self.w_tiles = ['萬1', '萬2', '萬3', '萬4', '萬5', '萬6', '萬7', '萬8', '萬9']
         self.t_tiles = ['條1', '條2', '條3', '條4', '條5', '條6', '條7', '條8', '條9']
@@ -21,6 +27,7 @@ class Mahjong:
         self.Kong_this_round = False
 
     def display_all_hands(self):
+        self.sort_all_hands()
         for player in self.players:
             print('\nPlayer {0} 的手牌: '.format(player))
             index = 1
@@ -30,8 +37,9 @@ class Mahjong:
             print('\n')
 
     def display_hand(self):
+        self.sort_all_hands()
         print('\nPlayer', self.current_player + '\'s turn.')
-        print('\n你的手牌: ')
+        print('\n玩家{0}的手牌: '.format(self.current_player))
         index = 1
         for tile in self.hands[self.current_player]:
             print('({0}){1:^2}'.format(index, tile), end=' ')
@@ -49,33 +57,6 @@ class Mahjong:
                     self.current_player = self.players[(i+1)%len(self.players)]
                     break
 
-    def is_winning_tile(self, hand, tile):
-        hand_copy = hand[:]
-        hand_copy.append(tile)
-        hand_copy.sort()
-
-        # Check for a pair
-        pairs = [hand_copy[i] for i in range(0, len(hand_copy)-1, 2) if hand_copy[i] == hand_copy[i+1]]
-        if len(pairs) != 1:
-            return False
-
-        # Check for sets
-        sets = [hand_copy[i:i+3] for i in range(0, len(hand_copy)-2, 3) if hand_copy[i] == hand_copy[i+2]]
-        if len(sets) != 4:
-            return False
-
-        # Check for eyes
-        for i in range(len(hand_copy) - 1):
-            if hand_copy[i] == hand_copy[i+1]:
-                return True
-        return False
-
-    def is_winning_hand(self, hand):
-        for tile in self.tiles:
-            if self.is_winning_tile(hand, tile):
-                return True
-        return False
-    
     def current_player_turn(self):
         # The turn starts
         # Draw a tile
@@ -88,7 +69,7 @@ class Mahjong:
         self.display_hand()
 
         # Check win
-        self.check_win()
+        self.check_win(draw_tile)
 
         # Check Kong
         self.check_Kong(draw_tile)
@@ -102,7 +83,7 @@ class Mahjong:
         status = False # Determine whether continue other players' move
 
         # Check win
-        self.check_win()
+        self.check_win(discard_tile, True)
 
         # Check Kong
         status = self.check_Kong(discard_tile, True)
@@ -112,7 +93,8 @@ class Mahjong:
             status = self.check_Pong(discard_tile)
 
         # Check Chow
-
+        if not status:
+            status = self.check_Chow(discard_tile)
 
         return status
 
@@ -184,8 +166,8 @@ class Mahjong:
                                 hand.remove(tile)   # remove tiles from player's hand
                             self.open_hands[player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
                             self.Kong_this_round = True
-                            # Change player
-                            self.current_player = player
+                            # Player change // -1 配合外部player change(in play())
+                            self.current_player = self.players[(self.players.index(player) - 1) % 4]
                             return True
         return False
 
@@ -206,7 +188,7 @@ class Mahjong:
                         for i in range(2):
                             hand.remove(tile)   # remove tiles from player's hand
                         self.open_hands[player].append(Pong_tile)  # append Pong tiles to the player's open hand
-                        # Change player
+                        # Player change
                         self.current_player = player
                         # Display your hand
                         self.display_hand()
@@ -215,19 +197,101 @@ class Mahjong:
                         return True
         return False
 
-    def check_Chow(self):
-        pass
+    def check_Chow(self, tile):
+        current_player_index = self.players.index(self.current_player)
+        next_player_index = (current_player_index + 1) % 4
+        next_player = self.players[next_player_index]
+        hand = self.hands[next_player]
+        hand.append(tile)
+        
+        tile_index = self.all_tiles.index(tile)
+        Chow_sets = []  # 紀錄可以吃的組合
+        tile_type = []  # 哪種牌(萬or條or餅)
+        # 萬
+        if tile_index < 9:
+            tile_type = self.w_tiles
+            tile_index %= 9
+        # 條
+        elif tile_index < 18:
+            tile_type = self.t_tiles
+            tile_index %= 9
+        # 餅
+        elif tile_index < 27:
+            tile_type = self.b_tiles
+            tile_index %= 9
+
+        for i in range(3):
+            Chow_set = []
+            # Decide whether can Chow or not
+            '''
+            +----+----+----+----+
+            |\ i |    |    |    |
+            | \  | -0 | -1 | -2 |
+            |j \ |    |    |    |
+            +----+----+----+----+
+            | +0 |  0 | -1 | -2 |
+            +----+----+----+----+
+            | +1 |  1 |  0 | -1 |
+            +----+----+----+----+
+            | +2 |  2 |  1 |  0 |
+            +----+----+----+----+
+            '''
+            for j in range(3):
+                can_Chow = True
+                if tile_index-i+j >= 0 and tile_index-i+j <= 8:
+                    if tile_type[tile_index-i+j] in hand:
+                        Chow_set.append(tile_type[tile_index-i+j])
+                    else:
+                        can_Chow = False
+                else:
+                    can_Chow = False
+
+                if not can_Chow:
+                    Chow_set = []
+                    break
+            
+            # 有可以吃的組合
+            if len(Chow_set) > 0:
+                Chow_sets.append(Chow_set)
+
+        if len(Chow_sets) > 0:
+            decision = int(input("玩家{0}是否要吃牌: (1)是 (2)否: ".format(next_player)))
+            if decision == 1:
+                print("玩家{0}選擇吃: ".format(next_player), end="")
+                for i in range(len(Chow_sets)):
+                    print("({0})".format(i), end="")
+                    for j in range(3):
+                        print(Chow_sets[i][j], end=" ")
+                Chow_decision = int(input(": "))
+
+                self.open_hands[next_player].append(Chow_sets[Chow_decision])   # Append Chow set into the player's open hand
+                for i in range(3):
+                    hand.remove(Chow_sets[Chow_decision][i])
+
+                # Player change
+                self.current_player = next_player
+                # display player's hand
+                self.display_hand()
+                # Discard a tile
+                self.discard_tile()
+                return True
+        else:
+            hand.remove(tile)
+        
+        return False
 
     def sort_all_hands(self):
         for player in self.players:
             self.hands[player].sort()
 
     def draw_tile(self):
-        tile = self.hands[self.current_player].append(self.tiles.pop(0))
+        self.hands[self.current_player].append(self.tiles.pop(0))
+        tile = self.hands[self.current_player][-1]
         return tile
 
     def discard_tile(self):
         hand = self.hands[self.current_player]
+        hand.sort()
         while True:
             tile_index = int(input('\nEnter tile to discard: ')) - 1
             if tile_index >= len(hand):
@@ -238,50 +302,71 @@ class Mahjong:
                 hand.remove(hand[tile_index])
                 return discard_tile
 
-    def check_win(self, tile):
-            hand = self.hands[self.current_player]
+    def check_win(self, tile, discard=False):
+        hand = self.hands[self.current_player].copy()
+        if discard:
             hand.append(tile)
-            hand = hand.sort()
-            eyes = []
-            for i in range(len(hand) - 1):
-                if hand[i] == hand[i+1] and eyes.count(hand[i]) == 0:
-                    eyes.append(hand[i])
+        hand.sort()
+        eyes = []
+        for i in range(len(hand) - 1):
+            if hand[i] == hand[i+1] and eyes.count(hand[i]) == 0:
+                eyes.append(hand[i])
+
+        if len(eyes) == 0:
+            return False
+
+        for eye in eyes:
+            hand = self.hands[self.current_player].copy()
+            if discard:
+                hand.append(tile)
+            hand.sort()
+            hand.remove(eye)
+            hand.remove(eye)
             
-            if len(eyes) == 0:
-                return False
+            while True:
+                # Win 
+                if len(hand) == 0:
+                    return True
+                # The first tile in hand
+                i = hand[0]
+                # Remove Pong first
+                if hand.count(i) >= 3:
+                    hand.remove(i)
+                    hand.remove(i)
+                    hand.remove(i)
+                    continue
+                
+                if self.all_tiles.index(i) > 26:    # 字牌
+                    break
+                
+                tile_type = []  # 哪種牌(萬or薯條or薯餅)
+                tile_index = self.all_tiles.index(i)
+                # 萬
+                if tile_index < 9:
+                    tile_type = self.w_tiles
+                    tile_index %= 9
+                # 條
+                elif tile_index < 18:
+                    tile_type = self.t_tiles
+                    tile_index %= 9
+                # 餅
+                elif tile_index < 27:
+                    tile_type = self.b_tiles
+                    tile_index %= 9
 
-            for eye in eyes:
-                hand = self.hands[self.current_player]
-                hand.remove(eye)
-                hand.remove(eye)
-                for i in hand:
-                    if hand.count(i) >= 3:
-                        hand.remove(i)
-                        hand.remove(i)
-                        hand.remove(i)
-                        continue
-                    
-                    if self.w_tiles.count(i):
-                        chow_index = self.w_tiles.index(i)
-                        chow_mid = self.w_tiles[chow_index + 1]
-                        chow_last = self.w_tiles[chow_index + 2]
-                    elif self.t_tiles.count(i):
-                        chow_index = self.t_tiles.index(i)
-                        chow_mid = self.t_tiles[chow_index + 1]
-                        chow_last = self.t_tiles[chow_index + 2]
-                    elif self.b_tiles.count(i):
-                        chow_index = self.b_tiles.index(i)
-                        chow_mid = self.b_tiles[chow_index + 1]
-                        chow_last = self.b_tiles[chow_index + 2]
+                if tile_type.index(i) < 7:
+                    chow_index = tile_type.index(i)
+                    chow_mid = tile_type[chow_index + 1]
+                    chow_last = tile_type[chow_index + 2]
 
+                    # Remove Chow
                     if hand.count(chow_mid) != 0 and hand.count(chow_last) != 0:
                         hand.remove(i)
                         hand.remove(chow_mid)
                         hand.remove(chow_last)
                         continue
-                    break
-                if len(hand) == 0:
-                    return True
+                break
+        return False
 
     def play(self):
         first_turn = True
@@ -312,9 +397,12 @@ class Mahjong:
             end = int(input("end or not (1)yes (2)no: "))
             if end == 1:
                 exit()
-
+            
             # Player change
             self.player_change()
+
+
+            
             
             
 
