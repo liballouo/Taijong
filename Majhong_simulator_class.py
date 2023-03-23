@@ -100,12 +100,8 @@ class Mahjong:
 
     def check_Kong(self, tile, discard=False):
         hand = self.hands[self.current_player]
-        if not discard:
-            hand.append(tile)
-            hand.sort()
         
         count_hand = hand.count(tile)   # Count for the same tile
-        print(count_hand)
 
         Kong_tile_3 = []
         for i in range(3):
@@ -126,7 +122,7 @@ class Mahjong:
             # concealed Kong case 1:
             for i in hand: # i is the tile in hand
                 if hand.count(i) == 4:
-                    decision = int(input("玩家{0}是否要槓牌({1}): (1)是 (2)否: ".format(self.current_player, i)))
+                    decision = int(input("玩家{0}是否要暗槓({1}): (1)是 (2)否: ".format(self.current_player, i)))
                     if decision == 1:
                         for j in range(4):
                             hand.remove(i)
@@ -139,34 +135,40 @@ class Mahjong:
                     return False
             # add Kong
             if is_in_open_hand:
-                decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
+                decision = int(input("玩家{0}是否要加槓: (1)是 (2)否: ".format(self.current_player)))
                 if decision == 1:
                     hand.remove(tile)   # remove the tile from player's hand 
                     # adjust the set in open hand from 3 tiles to 4 tiles
                     tile_index = self.open_hands[self.current_player].index(Kong_tile_3)
-                    print(tile_index)
                     self.open_hands[self.current_player][tile_index].append(tile)
                     self.Kong_this_round = True
                     return True
                 return False
+            return False
 
         # A player discards a tile.
         if discard:
             for player in self.players:
                 if player != self.current_player:
                     hand = self.hands[player]
+                    hand.append(tile)
+                    hand.sort()
+                    print("{0} current hand: ".format(player), hand)
                     count_hand = hand.count(tile)   # Count for the same tile
                     # exposed Kong
-                    if count_hand == 3:
-                        decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(player)))
+                    if count_hand == 4:
+                        decision = int(input("玩家{0}是否要明槓: (1)是 (2)否: ".format(player)))
                         if decision == 1:
-                            for i in range(3):
+                            for i in range(4):
                                 hand.remove(tile)   # remove tiles from player's hand
                             self.open_hands[player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
                             self.Kong_this_round = True
-                            # Player change // -1 配合外部player change(in play())
-                            self.current_player = self.players[(self.players.index(player) - 1) % 4]
+                            # Player change
+                            self.current_player = self.current_player
                             return True
+                    print("remove! Kong")
+                    hand.remove(tile)
+            
         return False
 
     def check_Pong(self, tile):
@@ -250,7 +252,9 @@ class Mahjong:
             
             # 有可以吃的組合
             if len(Chow_set) > 0:
-                Chow_sets.append(Chow_set)
+                if tile in Chow_set:
+                    Chow_sets.append(Chow_set)
+
 
         if len(Chow_sets) > 0:
             decision = int(input("玩家{0}是否要吃牌: (1)是 (2)否: ".format(next_player)))
@@ -273,10 +277,12 @@ class Mahjong:
                 # Discard a tile
                 self.discard_tile()
                 return True
+            '''
             # 不吃可吃
             else:
                 hand.remove(tile)
-        
+            '''
+        hand.remove(tile)
         return False
 
     def sort_all_hands(self):
@@ -325,6 +331,8 @@ class Mahjong:
             while True:
                 # Win 
                 if len(hand) == 0:
+                    print("Player {0} win!!!".format(self.current_player))
+                    exit()
                     return True
                 # The first tile in hand
                 i = hand[0]
@@ -393,11 +401,13 @@ class Mahjong:
             if self.Kong_this_round == True:
                 self.Kong_this_round = False
                 continue
-
+            
+            '''
             # End or not
             end = int(input("end or not (1)yes (2)no: "))
             if end == 1:
                 exit()
+            '''
             
             # Player change
             self.player_change()
