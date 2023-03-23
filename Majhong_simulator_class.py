@@ -100,7 +100,12 @@ class Mahjong:
 
     def check_Kong(self, tile, discard=False):
         hand = self.hands[self.current_player]
+        if not discard:
+            hand.append(tile)
+            hand.sort()
+        
         count_hand = hand.count(tile)   # Count for the same tile
+        print(count_hand)
 
         Kong_tile_3 = []
         for i in range(3):
@@ -119,9 +124,9 @@ class Mahjong:
         # A player draws a tile.
         if not discard:
             # concealed Kong case 1:
-            for i in range(len(hand)): # i is the tile in hand
+            for i in hand: # i is the tile in hand
                 if hand.count(i) == 4:
-                    decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
+                    decision = int(input("玩家{0}是否要槓牌({1}): (1)是 (2)否: ".format(self.current_player, i)))
                     if decision == 1:
                         for j in range(4):
                             hand.remove(i)
@@ -131,16 +136,7 @@ class Mahjong:
                         self.open_hands[self.current_player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
                         self.Kong_this_round = True
                         return True
-            '''
-            # concealed Kong case 2:
-            if count_hand == 4:
-                decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
-                if decision == 1:
-                    for i in range(4):
-                        hand.remove(tile)   # remove tiles from player's hand
-                    self.open_hands[self.current_player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
-                    return True
-            '''
+                    return False
             # add Kong
             if is_in_open_hand:
                 decision = int(input("玩家{0}是否要槓牌: (1)是 (2)否: ".format(self.current_player)))
@@ -148,9 +144,11 @@ class Mahjong:
                     hand.remove(tile)   # remove the tile from player's hand 
                     # adjust the set in open hand from 3 tiles to 4 tiles
                     tile_index = self.open_hands[self.current_player].index(Kong_tile_3)
-                    self.open_hands[self.current_player][tile_index] += tile
+                    print(tile_index)
+                    self.open_hands[self.current_player][tile_index].append(tile)
                     self.Kong_this_round = True
                     return True
+                return False
 
         # A player discards a tile.
         if discard:
@@ -275,8 +273,9 @@ class Mahjong:
                 # Discard a tile
                 self.discard_tile()
                 return True
-        else:
-            hand.remove(tile)
+            # 不吃可吃
+            else:
+                hand.remove(tile)
         
         return False
 
@@ -293,7 +292,7 @@ class Mahjong:
         hand = self.hands[self.current_player]
         hand.sort()
         while True:
-            tile_index = int(input('\nEnter tile to discard: ')) - 1
+            tile_index = int(input('\nEnter a tile to discard: ')) - 1
             if tile_index >= len(hand):
                 print('Tile not found in hand. Please try again.')
             else:
@@ -354,6 +353,7 @@ class Mahjong:
                     tile_type = self.b_tiles
                     tile_index %= 9
 
+                # Check Chow (start from 1 to 7, e.g. "'1'23", "'5'67")
                 if tile_type.index(i) < 7:
                     chow_index = tile_type.index(i)
                     chow_mid = tile_type[chow_index + 1]
@@ -365,6 +365,7 @@ class Mahjong:
                         hand.remove(chow_mid)
                         hand.remove(chow_last)
                         continue
+                # This tile isn't able to form a set.
                 break
         return False
 
@@ -388,7 +389,7 @@ class Mahjong:
                 next_turn = self.check_other_player_move(discard_tile)
                 do = True
             
-            # Someone Kong this round
+            # Someone Kong this round -> This player still has their turn.
             if self.Kong_this_round == True:
                 self.Kong_this_round = False
                 continue
