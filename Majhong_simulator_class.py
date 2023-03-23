@@ -66,10 +66,10 @@ class Mahjong:
         self.sort_all_hands()
 
         # Display player's hand
-        self.display_hand()
+        # self.display_hand()
 
         # Check win
-        self.check_win(draw_tile)
+        self.check_win(draw_tile, self.current_player)
 
         # Check Kong
         self.check_Kong(draw_tile)
@@ -83,7 +83,9 @@ class Mahjong:
         status = False # Determine whether continue other players' move
 
         # Check win
-        self.check_win(discard_tile, True)
+        for player in self.players:
+            if player != self.current_player:
+                self.check_win(discard_tile, player, True)
 
         # Check Kong
         status = self.check_Kong(discard_tile, True)
@@ -151,24 +153,19 @@ class Mahjong:
             for player in self.players:
                 if player != self.current_player:
                     hand = self.hands[player]
-                    hand.append(tile)
-                    hand.sort()
-                    print("{0} current hand: ".format(player), hand)
                     count_hand = hand.count(tile)   # Count for the same tile
                     # exposed Kong
-                    if count_hand == 4:
+                    if count_hand == 3:
                         decision = int(input("玩家{0}是否要明槓: (1)是 (2)否: ".format(player)))
                         if decision == 1:
-                            for i in range(4):
+                            for i in range(3):
                                 hand.remove(tile)   # remove tiles from player's hand
                             self.open_hands[player].append(Kong_tile_4)  # append Kong tiles to the player's open hand
                             self.Kong_this_round = True
                             # Player change
-                            self.current_player = self.current_player
+                            self.current_player = player
                             return True
-                    print("remove! Kong")
-                    hand.remove(tile)
-            
+                        return False
         return False
 
     def check_Pong(self, tile):
@@ -190,10 +187,10 @@ class Mahjong:
                         self.open_hands[player].append(Pong_tile)  # append Pong tiles to the player's open hand
                         # Player change
                         self.current_player = player
+                        '''
                         # Display your hand
                         self.display_hand()
-                        # Discard a tile
-                        self.discard_tile()
+                        '''
                         return True
         return False
 
@@ -253,6 +250,7 @@ class Mahjong:
             # 有可以吃的組合
             if len(Chow_set) > 0:
                 if tile in Chow_set:
+                    print(tile)
                     Chow_sets.append(Chow_set)
 
 
@@ -272,10 +270,12 @@ class Mahjong:
 
                 # Player change
                 self.current_player = next_player
+                '''
                 # display player's hand
                 self.display_hand()
                 # Discard a tile
                 self.discard_tile()
+                '''
                 return True
             '''
             # 不吃可吃
@@ -298,6 +298,7 @@ class Mahjong:
         hand = self.hands[self.current_player]
         hand.sort()
         while True:
+            self.display_hand()
             tile_index = int(input('\nEnter a tile to discard: ')) - 1
             if tile_index >= len(hand):
                 print('Tile not found in hand. Please try again.')
@@ -307,8 +308,8 @@ class Mahjong:
                 hand.remove(hand[tile_index])
                 return discard_tile
 
-    def check_win(self, tile, discard=False):
-        hand = self.hands[self.current_player].copy()
+    def check_win(self, tile, player, discard=False):
+        hand = self.hands[player].copy()
         if discard:
             hand.append(tile)
         hand.sort()
@@ -321,7 +322,7 @@ class Mahjong:
             return False
 
         for eye in eyes:
-            hand = self.hands[self.current_player].copy()
+            hand = self.hands[player].copy()
             if discard:
                 hand.append(tile)
             hand.sort()
@@ -331,9 +332,8 @@ class Mahjong:
             while True:
                 # Win 
                 if len(hand) == 0:
-                    print("Player {0} win!!!".format(self.current_player))
+                    print("Player {0} win!!!".format(player))
                     exit()
-                    return True
                 # The first tile in hand
                 i = hand[0]
                 # Remove Pong first
@@ -395,6 +395,8 @@ class Mahjong:
             # Other player's turn
             while((next_turn or not do) and not self.Kong_this_round):
                 next_turn = self.check_other_player_move(discard_tile)
+                if next_turn and not self.Kong_this_round:
+                    discard_tile = self.discard_tile()
                 do = True
             
             # Someone Kong this round -> This player still has their turn.
