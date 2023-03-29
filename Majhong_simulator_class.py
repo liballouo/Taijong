@@ -66,6 +66,9 @@ class Mahjong:
         # Sort player's hand
         self.sort_all_hands()
 
+        # Check draw
+        self.check_draw()
+
         # Display player's hand
         # self.display_hand()
 
@@ -98,9 +101,6 @@ class Mahjong:
         # Check Chow
         if not status:
             status = self.check_Chow(discard_tile)
-
-        # Check draw
-        self.check_draw()
 
         return status
 
@@ -421,7 +421,6 @@ class Mahjong:
             
             # Player change
             self.player_change()
-
 
 # Set up game
 num_players = 4
