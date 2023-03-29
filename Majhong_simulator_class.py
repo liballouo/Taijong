@@ -20,6 +20,7 @@ class Mahjong:
         self.card_river = []    
         self.hands = {player :[self.tiles.pop(random.randint(0, len(self.tiles) - 1)) for i in range(16)] for player in self.players}
         self.open_hands = {player :[] for player in self.players}
+        self.discard_hand = {player :[] for player in self.players}
         self.sets = {player :[] for player in self.players}
         self.pairs = {player :[] for player in self.players}
         self.current_player = '1(East)'
@@ -97,6 +98,9 @@ class Mahjong:
         # Check Chow
         if not status:
             status = self.check_Chow(discard_tile)
+
+        # Check draw
+        self.check_draw()
 
         return status
 
@@ -250,7 +254,6 @@ class Mahjong:
             # 有可以吃的組合
             if len(Chow_set) > 0:
                 if tile in Chow_set:
-                    print(tile)
                     Chow_sets.append(Chow_set)
 
 
@@ -259,14 +262,14 @@ class Mahjong:
             if decision == 1:
                 print("玩家{0}選擇吃: ".format(next_player), end="")
                 for i in range(len(Chow_sets)):
-                    print("({0})".format(i), end="")
+                    print("({0})".format(i+1), end="")
                     for j in range(3):
                         print(Chow_sets[i][j], end=" ")
                 Chow_decision = int(input(": "))
 
-                self.open_hands[next_player].append(Chow_sets[Chow_decision])   # Append Chow set into the player's open hand
+                self.open_hands[next_player].append(Chow_sets[Chow_decision-1])   # Append Chow set into the player's open hand
                 for i in range(3):
-                    hand.remove(Chow_sets[Chow_decision][i])
+                    hand.remove(Chow_sets[Chow_decision-1][i])
 
                 # Player change
                 self.current_player = next_player
@@ -306,6 +309,8 @@ class Mahjong:
                 print('\nPlayer {0} 丟 {1}\n'.format(self.current_player, hand[tile_index]))
                 discard_tile = hand[tile_index]
                 hand.remove(hand[tile_index])
+                self.discard_hand[self.current_player].append(discard_tile)
+                self.discard_hand[self.current_player].sort()
                 return discard_tile
 
     def check_win(self, tile, player, discard=False):
@@ -376,6 +381,16 @@ class Mahjong:
                 # This tile isn't able to form a set.
                 break
         return False
+    
+    # 流局
+    def check_draw(self):
+        '''
+        for player in self.players:
+            print("Player {0} 的丟牌: {1}".format(player, self.discard_hand[player]))
+        '''
+        if len(self.tiles) <= 14:
+            print("流局!")
+            exit()
 
     def play(self):
         first_turn = True
@@ -404,20 +419,9 @@ class Mahjong:
                 self.Kong_this_round = False
                 continue
             
-            '''
-            # End or not
-            end = int(input("end or not (1)yes (2)no: "))
-            if end == 1:
-                exit()
-            '''
-            
             # Player change
             self.player_change()
 
-
-            
-            
-            
 
 # Set up game
 num_players = 4
