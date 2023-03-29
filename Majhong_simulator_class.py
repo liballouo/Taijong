@@ -66,9 +66,6 @@ class Mahjong:
         # Sort player's hand
         self.sort_all_hands()
 
-        # Check draw
-        self.check_draw()
-
         # Display player's hand
         # self.display_hand()
 
@@ -90,6 +87,9 @@ class Mahjong:
         for player in self.players:
             if player != self.current_player:
                 self.check_win(discard_tile, player, True)
+
+        # Check draw
+        self.check_draw()
 
         # Check Kong
         status = self.check_Kong(discard_tile, True)
