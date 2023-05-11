@@ -475,50 +475,46 @@ class Mahjong:
             
             # 有可以吃的組合
             if len(Chow_set) > 0:
+                # 將可以吃的組合放入Chow sets
                 if tile in Chow_set:
                     Chow_sets.append(Chow_set)
 
+        # 用來做決定的list [吃左, 吃中, 吃右]
+        Chow_decison_set = [[], [], []]
+
+        for i in range(len(Chow_sets)):
+            index = Chow_sets[i].index(tile)           
+            Chow_decison_set[index] = Chow_sets[i]
 
         if len(Chow_sets) > 0:
             print("玩家{0}是否要吃牌: (1)否 ".format(next_player), end="")
-            for i in range(len(Chow_sets)):
+            for i in range(len(Chow_sets)): 
                 print("({0})".format(i+2, end=""))
                 for j in range(3):
                     print(Chow_sets[i][j], end=" ")
-            decision = random.randint(1, len(Chow_sets)+1)
+            decision = random.randint(1, len(Chow_decison_set)+1)
             print(decision)
-            '''
-            decision = print("玩家{0}是否要吃牌: (1)是 (2)否: ".format(next_player), end='')
-            # random choose action 
-            decision = random.randint(1, 2)
-            print(decision)
-            '''
+            
             # player chooses Chow
             if decision != 1:
-                '''
-                print("玩家{0}選擇吃: ".format(next_player), end="")
-                for i in range(len(Chow_sets)):
-                    print("({0})".format(i+1), end="")
-                    for j in range(3):
-                        print(Chow_sets[i][j], end=" ")
-                print(": ", end='')
-                # Random choose action
-                Chow_decision = random.randint(1, len(Chow_sets))
-                print(Chow_decision)
-                '''
+                
+                # 2, 3, 4 -> == [] -> invalid -> redecision
+                while Chow_decison_set[decision-2] == []:
+                    decision = random.randint(2, len(Chow_decison_set)+1)
+
                 Chow_decision = decision
 
                 Chow_type_sl = [0] * 34
-                for i in Chow_sets[Chow_decision-2]:
+                for i in Chow_decison_set[Chow_decision-2]:
                     Chow_type_sl[self.all_tiles.index(i)] += 1
                 self.Chow_data.loc[len(self.Chow_data.index)]=[throw_sl,hand_sl,open_hand_1_sl,open_hand_2_sl,open_hand_3_sl,open_hand_4_sl,
                                                                discard_hand_1_sl,discard_hand_2_sl,discard_hand_3_sl,discard_hand_4_sl,
                                                                decision,Chow_type_sl]
 
                 for i in range(3):
-                    self.open_hands[next_player].append(Chow_sets[Chow_decision-2][i])   # Append Chow set into the player's open hand
+                    self.open_hands[next_player].append(Chow_decison_set[Chow_decision-2][i])   # Append Chow set into the player's open hand
 
-                    hand.remove(Chow_sets[Chow_decision-2][i])
+                    hand.remove(Chow_decison_set[Chow_decision-2][i])
 
                 # Player change
                 self.current_player = next_player
@@ -737,7 +733,7 @@ num_wins = 0
 num_draws = 0
 
 
-for i in range(50):
+for i in range(10):
     game = Mahjong(num_players)
 
     # Play game
