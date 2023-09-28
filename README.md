@@ -16,6 +16,6 @@ A Taiwanese Mahjong game with AI.
 
 6.run AI_client.py
 
-then you can see two windows, one is controlled by you, another one is controlled by AI.
+then you can see two windows, one is controlled by you, the other one is controlled by AI.
 
 co-author: Matthew Hung, 游宗謀
