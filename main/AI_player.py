@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from tile import *
-# from deck import Deck
 from player import Player
 from response import *
 import time

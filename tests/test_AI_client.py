@@ -1,5 +1,5 @@
 import unittest
-from src.Taijong.AI_client import *
+from main.AI_client import *
 
 class TestAIClient(unittest.TestCase):
     # Check if the hand sprite is no the reight position

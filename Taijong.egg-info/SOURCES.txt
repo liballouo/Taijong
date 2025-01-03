@@ -1,0 +1,8 @@
+README.md
+setup.py
+Taijong.egg-info/PKG-INFO
+Taijong.egg-info/SOURCES.txt
+Taijong.egg-info/dependency_links.txt
+Taijong.egg-info/top_level.txt
+tests/test_AI_client.py
+tests/test_mahjong.py

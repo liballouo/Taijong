@@ -1,9 +1,15 @@
-from unittest.mock import patch
+import sys
+from pathlib import Path
+
+# 將專案根目錄加入系統路徑
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+
 import unittest
-from Taijong.majhong import Majhong
-from Taijong.tile import ALL_TILES
-from Taijong.human_player import Human_Player
-from Taijong.AI_player import AI_Player
+from main.majhong import Majhong
+from main.tile import ALL_TILES
+from main.human_player import Human_Player
+from main.AI_player import AI_Player
 
 class TestMajhong(unittest.TestCase):
     def setUp(self):
