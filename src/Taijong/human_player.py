@@ -1,5 +1,5 @@
 from tile import *
-from deck import Deck
+# from deck import Deck
 from player import Player
 
 class Human_Player(Player):

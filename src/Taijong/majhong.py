@@ -1,5 +1,5 @@
 from deck import Deck
-from player import Player
+# from .player import Player
 from human_player import Human_Player
 from AI_player import AI_Player
 
@@ -9,17 +9,16 @@ class Majhong:
         self.deck = Deck()
         self.players = []
 
-        for i in range(human_player_num):
+        for _ in range(human_player_num):
             self.players.append(Human_Player())
         
-        for i in range(4 - human_player_num):
+        for _ in range(4 - human_player_num):
             self.players.append(AI_Player())
         
         self.draw = True
         self.win = False
         self.jia_kong = False
         self.an_kong = False
-        # self.discard_tile = ""
         self.last_player = 0
         self.next_player = 0
         # for pygame update
@@ -28,7 +27,6 @@ class Majhong:
 
     def initialize(self):
         self.deck.shuffle()
-        # self.deck.print_tiles() # 之後刪掉
         self.deal()
         for i in self.players:
             i.hand.sort()
@@ -208,22 +206,3 @@ class Majhong:
         while not self.players[p].receive_or_not:
             i+=1
         self.players[p].receive_or_not = False
-
-
-# majhong = Majhong(4)
-# majhong.initialize()
-# while majhong.win != True:
-#     majhong.player_turn()
-#     if majhong.win == True:
-#         break
-#     if majhong.jia_kong == True:
-#         majhong.jia_kong = False
-#         continue
-#     if majhong.an_kong == True:
-#         majhong.an_kong = False
-#         continue
-#     majhong.check_other_player_move(majhong.discard_tile)
-
-# print(f"Player {majhong.last_player} win!!!")
-# print("exit")
-# exit()
