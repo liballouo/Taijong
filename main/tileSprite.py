@@ -1,4 +1,5 @@
 from tileImg import *
+# from .tileImg import *
 
 class TileSprite:
     def __init__(self, tile):

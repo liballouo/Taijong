@@ -3,6 +3,9 @@ import torch.nn as nn
 from tile import *
 from player import Player
 from response import *
+# from .tile import *
+# from .player import Player
+# from .response import *
 import time
 
 class AI_Player(Player):

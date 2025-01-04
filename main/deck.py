@@ -1,5 +1,6 @@
 import random
 from tile import *
+# from .tile import *
 
 class Deck:
     def __init__(self):

@@ -1,5 +1,12 @@
-import unittest
+import sys
+from pathlib import Path
+# 將專案根目錄加入系統路徑
+project_root = Path(__file__).parent.parent
+sys.path.append(str(project_root))
+
 from main.AI_client import *
+
+import unittest
 
 class TestAIClient(unittest.TestCase):
     # Check if the hand sprite is no the reight position

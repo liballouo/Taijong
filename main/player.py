@@ -1,6 +1,7 @@
 from tile import *
 from deck import Deck
-# from network import Network
+# from .tile import *
+# from .deck import Deck
 
 class Player:
     number_of_player = 0
