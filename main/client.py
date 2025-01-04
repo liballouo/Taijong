@@ -1,10 +1,10 @@
 from network import Network
 import pygame
 from setting import *
-from tileSprite import TileSprite
-from tileSprite import OpenTile
+from main.tile_sprite import TileSprite
+from main.tile_sprite import OpenTile
 from button import *
-from tileImg import background
+from main.tile_img import background
 
 pygame.init()
 pygame.mixer.init()

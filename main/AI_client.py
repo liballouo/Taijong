@@ -1,9 +1,9 @@
 from network import Network
 import pygame
 from setting import *
-from tileSprite import TileSprite
-from tileSprite import OpenTile
-from tileImg import *
+from main.tile_sprite import TileSprite
+from main.tile_sprite import OpenTile
+from main.tile_img import *
 
 def main():
     pygame.init()

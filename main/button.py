@@ -1,6 +1,6 @@
 import pygame
 from setting import *
-from tileImg import *
+from main.tile_img import *
 
 class Button:
     def __init__(self, x, y, width, height, text, move):

@@ -1,4 +1,4 @@
-from tileImg import *
+from main.tile_img import *
 # from .tileImg import *
 
 class TileSprite:
