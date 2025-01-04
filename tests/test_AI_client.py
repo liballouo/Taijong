@@ -9,7 +9,7 @@ from main.AI_client import *
 import unittest
 
 class TestAIClient(unittest.TestCase):
-    # Check if the hand sprite is no the reight position
+    # Check if the hand sprite is no the right position
     def test_update_hand_sprite(self):
         test_hand = ['萬1', '萬2', '萬3']
         sprites = update_hand_sprite(test_hand)

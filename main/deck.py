@@ -67,10 +67,3 @@ class Deck:
         for i in tile:
             list[self.all_tiles.index(i)] += 1
         return list
-
-# deck = Deck()
-# deck.shuffle()
-# deck.print_all_tiles()
-# deck.print_tiles()
-# print(deck.draw())
-# deck.print_tiles()

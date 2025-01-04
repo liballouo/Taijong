@@ -13,6 +13,7 @@ from main.AI_player import AI_Player
 
 class TestMajhong(unittest.TestCase):
     def setUp(self):
+        """每個測試案例前執行"""
         # 創建一個包含1個人類玩家的遊戲
         self.game = Majhong(1)
         # 初始化遊戲

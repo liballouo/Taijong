@@ -79,71 +79,137 @@ class Majhong:
         return decision, num
 
     def check_other_player_move(self, tile):
-        # 整理每個玩家的手牌
-        for i in self.players:
-            i.hand.sort()
-        # 看要不要do_win和do_fang_qiang，用來顯示結束遊戲的牌型和誰放槍，還沒寫別人放槍要不要胡
-        for player_num in range(len(self.players)):
-            self.players[player_num].check_fang_qiang(tile)
-            # 某玩家選擇贏
-            if self.players[player_num].win_move == True:
-                self.receive(player_num)
-                if self.players[player_num].win_or_not == True:
-                    self.players[player_num].hand.append(tile)
-                    self.players[player_num].hand.sort()
-                    self.players[self.last_player].discard_hand.pop()
-                    self.win = True
-                    return True
-            
-        # 檢查
-        for player_num in range(len(self.players)):
-            # initial the permission of decision types
-            for key in self.players[player_num].decision_types:
-                self.players[player_num].decision_types[key] = 0
-            # 檢查聽牌，若無 -> 槓 -> 碰
-            if player_num != self.last_player and self.players[player_num].ting_or_not == False:
-                if player_num != (self.last_player+1)%4:
-                    self.players[player_num].check_kong(tile)
-                self.players[player_num].check_pong(tile)
-        # 檢察廳牌，若無 -> 吃
-        if self.players[(self.last_player+1)%4].ting_or_not == False:
-            self.players[(self.last_player+1)%4].check_chow(tile)
+        """檢查其他玩家對於當前打出的牌的反應"""
+        self._sort_all_players_hands()
         
-        # 詢問玩家是否要進行 槓/碰/吃
-        for player_num in range(len(self.players)):
-            if self.players[player_num].decision_types["kong"] or self.players[player_num].decision_types["pong"] or self.players[player_num].decision_types["chow"]:
-                self.players[player_num].ask_kong_pong_chow(tile)
+        if self._check_win_reaction(tile):
+            return True
+            
+        self._reset_and_check_actions(tile)
+        return self._handle_player_decisions(tile)
 
-        # 玩家選擇 
-        # 槓
-        for player_num in range(len(self.players)):
-            if self.players[player_num].decision_types["kong"]:
-                decision, num = self.split_result(player_num)
+    def _sort_all_players_hands(self):
+        """整理所有玩家手牌"""
+        for player in self.players:
+            player.hand.sort()
+
+    def _check_win_reaction(self, tile):
+        """檢查是否有玩家可以胡牌"""
+        for player_num, player in enumerate(self.players):
+            if self._handle_player_win(player_num, player, tile):
+                return True
+        return False
+
+    def _handle_player_win(self, player_num, player, tile):
+        """處理玩家胡牌"""
+        player.check_fang_qiang(tile)
+        if player.win_move:
+            self.receive(player_num)
+            if player.win_or_not:
+                self._process_win(player, tile)
+                return True
+        return False
+
+    def _process_win(self, player, tile):
+        """處理勝利相關操作"""
+        player.hand.append(tile)
+        player.hand.sort()
+        self.players[self.last_player].discard_hand.pop()
+        self.win = True
+
+    def _reset_and_check_actions(self, tile):
+        """重置並檢查可能的動作"""
+        for player_num, player in enumerate(self.players):
+            self._reset_decision_types(player)
+            if player_num != self.last_player and not player.ting_or_not:
+                self._check_player_actions(player_num, player, tile)
+
+        # 檢查下家是否可以吃牌
+        next_player = self.players[(self.last_player+1)%4]
+        if not next_player.ting_or_not:
+            next_player.check_chow(tile)
+
+    def _reset_decision_types(self, player):
+        """重置玩家的決策類型"""
+        for key in player.decision_types:
+            player.decision_types[key] = 0
+
+    def _check_player_actions(self, player_num, player, tile):
+        """檢查玩家可能的動作"""
+        if player_num != (self.last_player+1)%4:
+            player.check_kong(tile)
+        player.check_pong(tile)
+
+    def _handle_player_decisions(self, tile):
+        """處理玩家的決策"""
+        self._ask_players_for_decisions(tile)
+        
+        if self._handle_kong_decision():
+            return True
+            
+        if self._handle_pong_decision():
+            return True
+            
+        if self._handle_chow_decision():
+            return True
+            
+        return True
+
+    def _ask_players_for_decisions(self, tile):
+        """詢問玩家是否要進行動作"""
+        for player in self.players:
+            if any(player.decision_types[action] for action in ["kong", "pong", "chow"]):
+                player.ask_kong_pong_chow(tile)
+
+    def _handle_kong_decision(self):
+        """處理槓牌決策"""
+        for player_num, player in enumerate(self.players):
+            if player.decision_types["kong"]:
+                decision, _ = self.split_result(player_num)
                 if decision == "kong":
-                    self.players[self.last_player].discard_hand.pop() # 丟的牌被槓 -> 把它從discard hand刪掉
-                    self.players[player_num].do_kong()
-                    self.next_player = player_num
+                    self._process_kong(player_num, player)
                     return True
-        # 碰
-        for player_num in range(len(self.players)):
-            if self.players[player_num].decision_types["pong"]:
-                decision, num = self.split_result(player_num)
+        return False
+
+    def _process_kong(self, player_num, player):
+        """處理槓牌操作"""
+        self.players[self.last_player].discard_hand.pop()
+        player.do_kong()
+        self.next_player = player_num
+
+    def _handle_pong_decision(self):
+        """處理碰牌決策"""
+        for player_num, player in enumerate(self.players):
+            if player.decision_types["pong"]:
+                decision, _ = self.split_result(player_num)
                 if decision == "pong":
-                    self.draw = False
-                    self.players[self.last_player].discard_hand.pop() # 丟的牌被碰->把她從discard hand刪掉
-                    self.players[player_num].do_pong()
-                    self.next_player = player_num
+                    self._process_pong(player_num, player)
                     return True
-        # 吃
-        if self.players[(self.last_player+1)%4].decision_types["chow"]:
+        return False
+
+    def _process_pong(self, player_num, player):
+        """處理碰牌操作"""
+        self.draw = False
+        self.players[self.last_player].discard_hand.pop()
+        player.do_pong()
+        self.next_player = player_num
+
+    def _handle_chow_decision(self):
+        """處理吃牌決策"""
+        next_player = self.players[(self.last_player+1)%4]
+        if next_player.decision_types["chow"]:
             decision, num = self.split_result((self.last_player+1)%4)
             if decision == "chow":
-                self.draw = False
-                self.players[self.last_player].discard_hand.pop() # 丟的牌被吃->把她從discard hand刪掉
-                self.players[(self.last_player+1)%4].do_chow(num)
-                self.next_player = (self.last_player+1)%4
+                self._process_chow(next_player, num)
                 return True
-        return True
+        return False
+
+    def _process_chow(self, player, num):
+        """處理吃牌操作"""
+        self.draw = False
+        self.players[self.last_player].discard_hand.pop()
+        player.do_chow(num)
+        self.next_player = (self.last_player+1)%4
 
     def player_turn(self):
         """處理玩家回合"""

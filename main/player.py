@@ -3,89 +3,145 @@ from deck import Deck
 # from .tile import *
 # from .deck import Deck
 
-class Player:
-    number_of_player = 0
+from dataclasses import dataclass, field
+from typing import List, Dict
+from enum import Enum
 
-    def __init__(self):
-        self.deck = Deck()
-        self.hand = []
-        self.open_hand = []
-        self.discard_hand = []
-        self.player_number = Player.number_of_player
-        Player.number_of_player += 1
-        self.draw_tile = ""
-        self.jia_kong_tile = ""
-        self.an_kong_tile = ""
-        self.discard_tile = ""
-        self.kong_tile = ""
-        self.pong_tile = ""
-        self.chow_sets = []
-        self.ting_tiles = []
-        self.win_or_not = False
-        self.jia_kong_or_not = False
-        self.an_kong_or_not = False
-        self.ting_or_not = False
-        self.decision_types = {"kong": 0, "pong": 0, "chow": 0}
-        self.decision_results = ""
+class ActionType(Enum):
+    """動作類型列舉"""
+    KONG = "kong"
+    PONG = "pong"
+    CHOW = "chow"
+
+@dataclass
+class Player:
+    # 玩家相關
+    deck: Deck = field(default_factory=Deck)
+    hand: List[str] = field(default_factory=list)
+    open_hand: List[str] = field(default_factory=list)
+    discard_hand: List[str] = field(default_factory=list)
+    player_number: int = 0
+    draw_tile: str = ""
+    decision_types: Dict[str, int] = field(default_factory=lambda: {t.value: 0 for t in ActionType})
+    
+    # 狀態相關屬性
+    win_or_not: bool = False
+    jia_kong_or_not: bool = False
+    an_kong_or_not: bool = False
+    ting_or_not: bool = False
+    win_move: bool = False
+    receive_or_not: bool = False
+    
+    # 動作相關屬性
+    jia_kong_tile: str = ""
+    an_kong_tile: str = ""
+    discard_tile: str = ""
+    kong_tile: str = ""
+    pong_tile: str = ""
+    chow_sets: List[List[str]] = field(default_factory=list)
+    ting_tiles: List[str] = field(default_factory=list)
+    decision_results: str = ""    
         
     def draw(self, tile):
         self.hand.append(tile)
         return tile
 
     def show_hand(self):
-        # print(*self.hand)
         for i in range(len(self.hand)):
             print(f"({i+1}){self.hand[i]}", end = " ")
-        print("")
 
-    def check_win(self):
-        hand = self.hand.copy()
+    def check_win(self) -> bool:
+        """檢查是否胡牌"""
+        return self._check_win_with_hand(self.hand.copy())
+
+    def check_fang_qiang(self, discard_tile: str) -> bool:
+        """檢查是否可以放槍胡"""
+        test_hand = self.hand.copy()
+        test_hand.append(discard_tile)
+        return self._check_win_with_hand(test_hand)
+
+    def _check_win_with_hand(self, hand: List[str]) -> bool:
+        """檢查指定手牌是否可以胡牌"""
         hand.sort()
-        eyes = []
-        for i in range(len(hand) - 1):
-            if hand.count(hand[i]) == 2 and eyes.count(hand[i]) == 0:
-                eyes.append(hand[i])
-
-        if len(eyes) == 0:
+        eyes = self._find_possible_eyes(hand)
+        
+        if not eyes:
             return False
 
-        for eye in eyes:
-            hand = self.hand.copy()
-            hand.sort()
-            hand.remove(eye)
-            hand.remove(eye)
+        return any(self._can_win_with_eye(hand.copy(), eye) for eye in eyes)
+
+    def _find_possible_eyes(self, hand: List[str]) -> List[str]:
+        """找出所有可能的對子"""
+        eyes = []
+        for i in range(len(hand) - 1):
+            current_tile = hand[i]
+            if (hand.count(current_tile) >= 2 and 
+                current_tile not in eyes):
+                eyes.append(current_tile)
+        return eyes
+
+    def _can_win_with_eye(self, hand: List[str], eye: str) -> bool:
+        """使用指定對子檢查是否可以胡牌"""
+        # 移除對子
+        hand.remove(eye)
+        hand.remove(eye)
+        
+        while hand:
+            if not self._try_remove_set(hand):
+                return False
+        return True
+
+    def _try_remove_set(self, hand: List[str]) -> bool:
+        """嘗試從手牌中移除一組順子或刻子"""
+        if not hand:
+            return True
             
-            while True:
-                # Win 
-                if len(hand) == 0:
-                    return True
-                # The first tile in hand
-                i = hand[0]
-                # Remove Pong first
-                if hand.count(i) >= 3:
-                    hand.remove(i)
-                    hand.remove(i)
-                    hand.remove(i)
-                    continue
-                
-                if ALL_TILES.index(i) > 26: # 字牌
-                    break
-                
-                tile_index, tile_type = self.deck.find_tile_type_index(i)
+        first_tile = hand[0]
+        
+        # 嘗試移除刻子
+        if self._try_remove_pung(hand, first_tile):
+            return True
+            
+        # 字牌只能組成刻子
+        if self._is_honor_tile(first_tile):
+            return False
+            
+        # 嘗試移除順子
+        return self._try_remove_chow(hand, first_tile)
 
-                # Check Chow (start from 1 to 7, e.g. "'1'23", "'5'67")
-                if tile_type.index(i) < 7:
-
-                    chow_set = tile_type[tile_index:tile_index+3]
-
-                    # Remove Chow
-                    if hand.count(chow_set[1]) != 0 and hand.count(chow_set[2]) != 0:
-                        for tile in chow_set:
-                            hand.remove(tile)
-                        continue
-                # This tile isn't able to form a set.
-                break
+    def _try_remove_pung(self, hand: List[str], tile: str) -> bool:
+        """嘗試移除刻子"""
+        if hand.count(tile) >= 3:
+            for _ in range(3):
+                hand.remove(tile)
+            return True
         return False
+
+    def _try_remove_chow(self, hand: List[str], first_tile: str) -> bool:
+        """嘗試移除順子"""
+        tile_index, tile_type = self.deck.find_tile_type_index(first_tile)
+        
+        if tile_type.index(first_tile) >= 7:  # 不能組成順子
+            return False
+            
+        chow_set = tile_type[tile_index:tile_index+3]
+        if self._can_form_chow(hand, chow_set):
+            self._remove_chow(hand, chow_set)
+            return True
+        return False
+
+    def _can_form_chow(self, hand: List[str], chow_set: List[str]) -> bool:
+        """檢查是否能夠形成順子"""
+        return all(tile in hand for tile in chow_set)
+
+    def _remove_chow(self, hand: List[str], chow_set: List[str]) -> None:
+        """從手牌中移除順子"""
+        for tile in chow_set:
+            hand.remove(tile)
+
+    def _is_honor_tile(self, tile: str) -> bool:
+        """判斷是否為字牌"""
+        return ALL_TILES.index(tile) > 26
     
     def check_fang_qiang(self, discard_tile):
         hand = self.hand.copy()
@@ -236,10 +292,10 @@ class Player:
     def do_an_kong(self):
         tile = self.an_kong_tile
         hand = self.hand
-        for i in range(4):
+        for _ in range(4):
             # remove tiles from player's hand
             hand.remove(tile)
-        for i in range(4):
+        for _ in range(4):
             # append Kong tiles to the player's open hand
             self.open_hand.append(tile)
         self.an_kong_tile = ""
@@ -382,6 +438,6 @@ class Player:
                 self.open_hand[-1] = temp
             return True
         return False
-    
+
     def ask_kong_pong_chow(self, tile):
         pass
