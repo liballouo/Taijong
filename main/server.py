@@ -1,7 +1,7 @@
 import socket
 from _thread import *
 import pickle
-from majhong import Majhong
+from main.mahjong import Majhong
 
 server = "192.168.150.199"
 # server = ""

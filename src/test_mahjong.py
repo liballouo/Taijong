@@ -1,9 +1,7 @@
 import sys
-from pathlib import Path
-
+import os
 # 將專案根目錄加入系統路徑
-project_root = Path(__file__).parent.parent
-sys.path.append(str(project_root))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import unittest
 from main.mahjong import Majhong
@@ -13,7 +11,6 @@ from main.AI_player import AI_Player
 
 class TestMajhong(unittest.TestCase):
     def setUp(self):
-        """每個測試案例前執行"""
         # 創建一個包含1個人類玩家的遊戲
         self.game = Majhong(1)
         # 初始化遊戲
@@ -173,4 +170,3 @@ class TestMajhong(unittest.TestCase):
     
 if __name__ == '__main__':
     unittest.main()
-    
