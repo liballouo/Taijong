@@ -18,4 +18,4 @@ A Taiwanese Mahjong game with AI.
 
 then you can see two windows, one is controlled by you, the other one is controlled by AI.
 
-co-author: Matthew Hung, 游宗謀
+co-author: Matthew Hung, George920825(You, Zong Mou)
